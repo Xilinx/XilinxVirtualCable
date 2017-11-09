@@ -176,7 +176,7 @@ int handle_data(int fd, volatile jtag_t* ptr) {
 					memcpy(&result[byteIndex], &tdo, bytesLeft);
 
 					if (verbose) {
-						printf("LEN : 0x%08x\n", 32);
+						printf("LEN : 0x%08x\n", bitsLeft);
 						printf("TMS : 0x%08x\n", tms);
 						printf("TDI : 0x%08x\n", tdi);
 						printf("TDO : 0x%08x\n", tdo);
