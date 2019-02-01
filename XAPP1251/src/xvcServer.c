@@ -24,6 +24,7 @@
 #include <pthread.h>
 
 #define MAP_SIZE      0x10000
+#define dsb(scope)    asm volatile("dsb " #scope : : : "memory")
 
 typedef struct {
   uint32_t  length_offset;
@@ -53,7 +54,7 @@ int handle_data(int fd, volatile jtag_t* ptr) {
 
 	do {
 		char cmd[16];
-		unsigned char buffer[2048], result[1024];
+		unsigned char buffer[8192], result[1024];
 		memset(cmd, 0, 16);
 
 		if (sread(fd, cmd, 2) != 1)
@@ -135,8 +136,11 @@ int handle_data(int fd, volatile jtag_t* ptr) {
 					memcpy(&tdi, &buffer[byteIndex + nr_bytes], 4);
 
 					ptr->length_offset = 32;        
+					dsb(st);
 					ptr->tms_offset = tms;         
+					dsb(st);
 					ptr->tdi_offset = tdi;       
+					dsb(st);
 					ptr->ctrl_offset = 0x01;
 
 					/* Switch this to interrupt in next revision */
@@ -163,8 +167,11 @@ int handle_data(int fd, volatile jtag_t* ptr) {
 					memcpy(&tdi, &buffer[byteIndex + nr_bytes], bytesLeft);
           
 					ptr->length_offset = bitsLeft;        
+					dsb(st);
 					ptr->tms_offset = tms;         
+					dsb(st);
 					ptr->tdi_offset = tdi;       
+					dsb(st);
 					ptr->ctrl_offset = 0x01;
 					/* Switch this to interrupt in next revision */
 					while (ptr->ctrl_offset)
