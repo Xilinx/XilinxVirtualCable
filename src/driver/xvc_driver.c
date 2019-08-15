@@ -186,15 +186,15 @@ cleanup:
 	return status;
 }
 
-long xil_xvc_readprops(const struct db_user_config* user_config, const char __user* arg) {
+long xil_xvc_readprops(const struct db_config* db_config, const char __user* arg) {
 	struct xil_xvc_properties xvc_props_obj;
 
-	if (!user_config) {
+	if (!db_config) {
 		return -EINVAL;
 	}
 
-	xvc_props_obj.debug_bridge_base_addr = user_config->base_addr;
-	xvc_props_obj.debug_bridge_size = user_config->size;
+	xvc_props_obj.debug_bridge_base_addr = db_config->base_addr;
+	xvc_props_obj.debug_bridge_size = db_config->size;
 	strcpy(xvc_props_obj.debug_bridge_compat_string, DEBUG_BRIDGE_COMPAT_STRING);
 
 	if (copy_to_user((void *)arg, &xvc_props_obj, sizeof(xvc_props_obj))) {

@@ -23,7 +23,18 @@
 #include "xvc_ioctl.h"
 #include "xvc_user_config.h"
 
+#ifndef _XVC_USER_CONFIG_H
+#define XVC_DRIVER_NAME "xilinx_xvc_driver"
+#define DEBUG_BRIDGE_COMPAT_STRING "xlnx,xvc"
+// debug bridge configuration
+struct db_config {
+	const char* name;
+	unsigned long base_addr;
+	unsigned long size;
+};
+#endif
+
 long xil_xvc_ioctl(unsigned char* db_ptr, const char __user* arg);
-long xil_xvc_readprops(const struct db_user_config* user_config, const char __user* arg);
+long xil_xvc_readprops(const struct db_config* db_config, const char __user* arg);
 
 #endif /* _XVC_DRIVER_H */
