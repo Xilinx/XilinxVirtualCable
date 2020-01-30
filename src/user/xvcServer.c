@@ -35,7 +35,6 @@ typedef struct {
 #else /* USE_IOCTL */
 #include <sys/ioctl.h>
 #include "xvc_ioctl.h"
-#define CHAR_DEV_PATH   "/dev/xilinx_xvc_driver"
 #endif /* !USE_IOCTL */
 
 static int verbose = 0;
@@ -227,34 +226,7 @@ int main(int argc, char **argv) {
     int c;
     struct sockaddr_in address;
     char hostname[256];
-
-#ifndef USE_IOCTL
-    int fd_uio;
-    volatile jtag_t* ptr = NULL;
-
-    fd_uio = open(UIO_PATH, O_RDWR);
-    if (fd_uio < 1) {
-        fprintf(stderr, "Failed to open uio: %s\n", UIO_PATH);
-        return -1;
-    }
-
-    ptr = (volatile jtag_t*) mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_uio, 0);
-    if (ptr == MAP_FAILED) {
-        fprintf(stderr, "MMAP Failed\n");
-        return -1;
-    }
-    close(fd_uio);
-#else /* USE_IOCTL */
-    int fd_ioctl;
-
-    fd_ioctl = open(CHAR_DEV_PATH, O_RDWR | O_SYNC);
-    if (fd_ioctl < 1) {
-        fprintf(stderr, "Failed to open xvc ioctl device driver: %s\n", CHAR_DEV_PATH);
-        return -1;
-    }
-
-    display_driver_properties(fd_ioctl);
-#endif /* !USE_IOCTL */
+    char *device_name = NULL;
 
     opterr = 0;
 
@@ -264,10 +236,30 @@ int main(int argc, char **argv) {
                 verbose = 1;
                 break;
             case '?':
-                fprintf(stderr, "usage: %s [-v]\n", *argv);
+                fprintf(stderr, "usage: %s [-v] device_node\n", *argv);
                 return 1;
         }
     }
+    for (int index = optind; index < argc; index++)
+      device_name = argv[index];
+
+    int fd_dev = open(device_name, O_RDWR);
+    if (fd_dev < 1) {
+        fprintf(stderr, "Failed to open device: %s\n", device_name);
+        return -1;
+    }
+
+#ifndef USE_IOCTL
+    volatile jtag_t* ptr = NULL;
+    ptr = (volatile jtag_t*) mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_dev, 0);
+    if (ptr == MAP_FAILED) {
+        fprintf(stderr, "MMAP Failed\n");
+        return -1;
+    }
+    close(fd_dev);
+#else /* USE_IOCTL */
+    display_driver_properties(fd_dev);
+#endif /* !USE_IOCTL */
 
     s = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -343,7 +335,7 @@ int main(int argc, char **argv) {
 #ifndef USE_IOCTL
                 } else if (handle_data(fd, ptr)) {
 #else /* USE_IOCTL */
-                } else if (handle_data(fd, fd_ioctl)) {
+                } else if (handle_data(fd, fd_dev)) {
 #endif /* !USE_IOCTL */
                     printf("connection closed - fd %d\n", fd);
                     close(fd);
@@ -362,7 +354,7 @@ int main(int argc, char **argv) {
 #ifndef USE_IOCTL
     munmap((void *) ptr, MAP_SIZE);
 #else /* USE_IOCTL */
-    close(fd_ioctl);
+    close(fd_dev);
 #endif /* !USE_IOCTL */
 
     return 0;

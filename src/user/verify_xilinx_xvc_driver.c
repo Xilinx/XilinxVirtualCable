@@ -35,8 +35,6 @@
 
 #include "xvc_ioctl.h"
 
-static const char char_path[] = "/dev/xilinx_xvc_driver";
-
 #define BYTE_ALIGN(a) ((a + 7) / 8)
 #define MIN(a, b) (a < b ? a : b)
 #define MAX(a, b) (a > b ? a : b)
@@ -157,11 +155,17 @@ int main(int argc, char **argv)
     unsigned test_lens[] = {32, 0};
     unsigned test_index = 0;
 
+    if (argc < 2)
+    {
+      fprintf(stderr, "Error: supply the device name as an argument\n");
+      return -1;
+    }
+
     // try opening the driver
-    fd = open(char_path, O_RDWR | O_SYNC);
+    fd = open(argv[1], O_RDWR | O_SYNC);
     if (fd <= 0)
     {
-        printf("Could not open driver at %s\n", char_path);
+        printf("Could not open driver at %s\n", argv[1]);
         printf("Error: %s\n", strerror(errno));
         return 0;
     }
