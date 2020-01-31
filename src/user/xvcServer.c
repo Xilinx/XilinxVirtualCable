@@ -213,7 +213,6 @@ void display_driver_properties(int fd_ioctl) {
         return;
     }
 
-    printf("INFO: XVC driver character file: %s\n", CHAR_DEV_PATH);
     printf("INFO: debug_bridge base address: 0x%lX\n", props.debug_bridge_base_addr);
     printf("INFO: debug_bridge size: 0x%lX\n", props.debug_bridge_size);
     printf("INFO: debug_bridge device tree compatibility string: %s\n\n", props.debug_bridge_compat_string);
@@ -234,6 +233,7 @@ int main(int argc, char **argv) {
         switch (c) {
             case 'v':
                 verbose = 1;
+                printf("Enable verbose mode\n");
                 break;
             case '?':
                 fprintf(stderr, "usage: %s [-v] device_node\n", *argv);
@@ -291,7 +291,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    printf("INFO: To connect to this xvcServer instance, use url: TCP:%s:%u\n\n", hostname, XVC_PORT);
+    printf("INFO: To connect to this xvcServer instance, use url: %s:%u\n", hostname, XVC_PORT);
+    printf("INFO: e.g. tcl:\n");
+    printf("connect_hw_server -url localhost:3121 -allow_non_jtag\n");
+    printf("open_hw_target -xvc_url %s:%u\n\n", hostname, XVC_PORT);
 
     fd_set conn;
     int maxfd = 0;
