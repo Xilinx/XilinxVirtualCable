@@ -59,7 +59,7 @@ int handle_data(int fd, volatile jtag_t* ptr) {
 int handle_data(int fd, int fd_ioctl) {
 #endif /* !USE_IOCTL */
     char xvcInfo[32];
-    unsigned int bufferSize = 2048;
+    unsigned int bufferSize = 4096;
 
     sprintf(xvcInfo, "xvcServer_v1.0:%u\n", bufferSize);
 
@@ -147,7 +147,7 @@ int handle_data(int fd, int fd_ioctl) {
             tdi = 0;
             tdo = 0;
 
-            if (bytesLeft < 4) {
+            if (bytesLeft <= 4) {
                 shift_num_bits = bitsLeft;
             }
             shift_num_bytes = (shift_num_bits + 7) / 8;
