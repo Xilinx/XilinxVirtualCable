@@ -42,7 +42,7 @@ static int verbose = 0;
 #define XVC_PORT 2542
 
 static int sread(int fd, void *target, int len) {
-    unsigned char *t = target;
+    unsigned char *t = (unsigned char*)target;
     while (len) {
         int r = read(fd, t, len);
         if (r <= 0)
@@ -72,10 +72,11 @@ int handle_data(int fd, int fd_ioctl) {
             return 1;
 
         if (memcmp(cmd, "ge", 2) == 0) {
+            int len = strlen(xvcInfo);
             if (sread(fd, cmd, 6) != 1)
                 return 1;
-            memcpy(result, xvcInfo, strlen(xvcInfo));
-            if (write(fd, result, strlen(xvcInfo)) != strlen(xvcInfo)) {
+            memcpy(result, xvcInfo, len);
+            if (write(fd, result, len) != len) {
                 perror("write");
                 return 1;
             }
@@ -114,7 +115,7 @@ int handle_data(int fd, int fd_ioctl) {
             return 1;
         }
 
-        int nr_bytes = (len + 7) / 8;
+        unsigned int nr_bytes = (len + 7) / 8;
         if (nr_bytes * 2 > sizeof(buffer)) {
             fprintf(stderr, "buffer size exceeded\n");
             return 1;
@@ -192,7 +193,7 @@ int handle_data(int fd, int fd_ioctl) {
             return errsv;
         }
 #endif /* !USE_IOCTL */
-        if (write(fd, result, nr_bytes) != nr_bytes) {
+        if (write(fd, result, nr_bytes) != (int)nr_bytes) {
             perror("write");
             return 1;
         }
