@@ -35,7 +35,6 @@ typedef struct {
 #else /* USE_IOCTL */
 #include <sys/ioctl.h>
 #include "xvc_ioctl.h"
-#define CHAR_DEV_PATH   "/dev/xilinx_xvc_driver"
 #endif /* !USE_IOCTL */
 
 static int verbose = 0;
@@ -43,7 +42,7 @@ static int verbose = 0;
 #define XVC_PORT 2542
 
 static int sread(int fd, void *target, int len) {
-    unsigned char *t = target;
+    unsigned char *t = (unsigned char*)target;
     while (len) {
         int r = read(fd, t, len);
         if (r <= 0)
@@ -60,7 +59,7 @@ int handle_data(int fd, volatile jtag_t* ptr) {
 int handle_data(int fd, int fd_ioctl) {
 #endif /* !USE_IOCTL */
     char xvcInfo[32];
-    unsigned int bufferSize = 2048;
+    unsigned int bufferSize = 4096;
 
     sprintf(xvcInfo, "xvcServer_v1.0:%u\n", bufferSize);
 
@@ -73,10 +72,11 @@ int handle_data(int fd, int fd_ioctl) {
             return 1;
 
         if (memcmp(cmd, "ge", 2) == 0) {
+            int len = strlen(xvcInfo);
             if (sread(fd, cmd, 6) != 1)
                 return 1;
-            memcpy(result, xvcInfo, strlen(xvcInfo));
-            if (write(fd, result, strlen(xvcInfo)) != strlen(xvcInfo)) {
+            memcpy(result, xvcInfo, len);
+            if (write(fd, result, len) != len) {
                 perror("write");
                 return 1;
             }
@@ -115,7 +115,7 @@ int handle_data(int fd, int fd_ioctl) {
             return 1;
         }
 
-        int nr_bytes = (len + 7) / 8;
+        unsigned int nr_bytes = (len + 7) / 8;
         if (nr_bytes * 2 > sizeof(buffer)) {
             fprintf(stderr, "buffer size exceeded\n");
             return 1;
@@ -148,7 +148,7 @@ int handle_data(int fd, int fd_ioctl) {
             tdi = 0;
             tdo = 0;
 
-            if (bytesLeft < 4) {
+            if (bytesLeft <= 4) {
                 shift_num_bits = bitsLeft;
             }
             shift_num_bytes = (shift_num_bits + 7) / 8;
@@ -193,7 +193,7 @@ int handle_data(int fd, int fd_ioctl) {
             return errsv;
         }
 #endif /* !USE_IOCTL */
-        if (write(fd, result, nr_bytes) != nr_bytes) {
+        if (write(fd, result, nr_bytes) != (int)nr_bytes) {
             perror("write");
             return 1;
         }
@@ -214,7 +214,6 @@ void display_driver_properties(int fd_ioctl) {
         return;
     }
 
-    printf("INFO: XVC driver character file: %s\n", CHAR_DEV_PATH);
     printf("INFO: debug_bridge base address: 0x%lX\n", props.debug_bridge_base_addr);
     printf("INFO: debug_bridge size: 0x%lX\n", props.debug_bridge_size);
     printf("INFO: debug_bridge device tree compatibility string: %s\n\n", props.debug_bridge_compat_string);
@@ -227,34 +226,7 @@ int main(int argc, char **argv) {
     int c;
     struct sockaddr_in address;
     char hostname[256];
-
-#ifndef USE_IOCTL
-    int fd_uio;
-    volatile jtag_t* ptr = NULL;
-
-    fd_uio = open(UIO_PATH, O_RDWR);
-    if (fd_uio < 1) {
-        fprintf(stderr, "Failed to open uio: %s\n", UIO_PATH);
-        return -1;
-    }
-
-    ptr = (volatile jtag_t*) mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_uio, 0);
-    if (ptr == MAP_FAILED) {
-        fprintf(stderr, "MMAP Failed\n");
-        return -1;
-    }
-    close(fd_uio);
-#else /* USE_IOCTL */
-    int fd_ioctl;
-
-    fd_ioctl = open(CHAR_DEV_PATH, O_RDWR | O_SYNC);
-    if (fd_ioctl < 1) {
-        fprintf(stderr, "Failed to open xvc ioctl device driver: %s\n", CHAR_DEV_PATH);
-        return -1;
-    }
-
-    display_driver_properties(fd_ioctl);
-#endif /* !USE_IOCTL */
+    char *device_name = NULL;
 
     opterr = 0;
 
@@ -262,12 +234,33 @@ int main(int argc, char **argv) {
         switch (c) {
             case 'v':
                 verbose = 1;
+                printf("Enable verbose mode\n");
                 break;
             case '?':
-                fprintf(stderr, "usage: %s [-v]\n", *argv);
+                fprintf(stderr, "usage: %s [-v] device_node\n", *argv);
                 return 1;
         }
     }
+    for (int index = optind; index < argc; index++)
+      device_name = argv[index];
+
+    int fd_dev = open(device_name, O_RDWR);
+    if (fd_dev < 1) {
+        fprintf(stderr, "Failed to open device: %s\n", device_name);
+        return -1;
+    }
+
+#ifndef USE_IOCTL
+    volatile jtag_t* ptr = NULL;
+    ptr = (volatile jtag_t*) mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_dev, 0);
+    if (ptr == MAP_FAILED) {
+        fprintf(stderr, "MMAP Failed\n");
+        return -1;
+    }
+    close(fd_dev);
+#else /* USE_IOCTL */
+    display_driver_properties(fd_dev);
+#endif /* !USE_IOCTL */
 
     s = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -288,7 +281,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (listen(s, 0) < 0) {
+    if (listen(s, 1) < 0) {
         perror("listen");
         return 1;
     }
@@ -299,7 +292,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    printf("INFO: To connect to this xvcServer instance, use url: TCP:%s:%u\n\n", hostname, XVC_PORT);
+    printf("INFO: To connect to this xvcServer instance, use url: %s:%u\n", hostname, XVC_PORT);
+    printf("INFO: e.g. tcl:\n");
+    printf("connect_hw_server -url localhost:3121 -allow_non_jtag\n");
+    printf("open_hw_target -xvc_url %s:%u\n\n", hostname, XVC_PORT);
 
     fd_set conn;
     int maxfd = 0;
@@ -343,7 +339,7 @@ int main(int argc, char **argv) {
 #ifndef USE_IOCTL
                 } else if (handle_data(fd, ptr)) {
 #else /* USE_IOCTL */
-                } else if (handle_data(fd, fd_ioctl)) {
+                } else if (handle_data(fd, fd_dev)) {
 #endif /* !USE_IOCTL */
                     printf("connection closed - fd %d\n", fd);
                     close(fd);
@@ -362,7 +358,7 @@ int main(int argc, char **argv) {
 #ifndef USE_IOCTL
     munmap((void *) ptr, MAP_SIZE);
 #else /* USE_IOCTL */
-    close(fd_ioctl);
+    close(fd_dev);
 #endif /* !USE_IOCTL */
 
     return 0;
