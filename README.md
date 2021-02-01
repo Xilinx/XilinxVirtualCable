@@ -284,4 +284,4 @@ Where:
 Similar to XVC 1.0
 
 ### MESSAGE: "shift:"
-Similar to XVC 1.1
+Similar to XVC 1.0
