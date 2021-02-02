@@ -14,10 +14,16 @@ This capability helps facilitate hardware debug for designs that:
 * Zynq®-7000 demonstration with Application Note and Reference Designs available in XAPP1251 - Xilinx Virtual Cable Running on Zynq-7000 Using the PetaLinux Tools
 * Extensible to allow for safe, secure connections
 
+# Directory layout
+    ├── versal                   # XVC 1.1 source code for Versal SoC devices
+    ├── zynq7000                 # XVC 1.0 source code for Zynq-7000 SoC devices
+    ├── zynqMP                   # XVC 1.0 source code for Zynq-Ultrascale+ SoC devices
+    └── README.md
+
 # XVC 1.0 Protocol
 ```
 XVC 1.0 Protocol 
-Copyright 2015-2019 Xilinx, Inc.  All rights reserved.
+Copyright 2015-2021 Xilinx, Inc.  All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -168,5 +174,117 @@ Where:
                num_bits and rounds up to the nearest byte.
 ```
 
+# XVC 1.1 Protocol
+```
+XVC 1.1 Protocol 
+Copyright 2015-2021 Xilinx, Inc.  All rights reserved.
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+## Overview
+In addition to XVC 1.0 capabilities, XVC 1.1 supports the "mrd" and "mwr" messages 
+which can be used to read/write debug addresses.
+
+## Protocol
+
+The XVC 1.1 communication protocol consists of the following five messages:
+
+```
+getinfo:
+mrd:<flags><address><num bytes>
+mwr:<flags><address><num bytes><data>
+settck:<period in ns>
+shift:<num bits><tms vector><tdi vector>
+```
+
+For each message the client is expected to send the message and wait for a response from the server.  The server needs to process each message in the order received and promptly provide a response. Note that for the XVC 1.1 protocol only one connection is assumed so as to avoid interleaving locking and interleaving issues that may occur with concurrent client communication.
+
+### MESSAGE: "getinfo:"
+
+The primary use of "getinfo:" message is to get the XVC server version. The server version provides a client a way of determining the protocol capabilities of the server.
+
+**Syntax**
+
+Client Sends:
+```
+"getinfo:"
+```
+
+Server Returns:
+```
+“xvcServer_v1.1:<xvc_vector_len>\n”
+```
+
+Where:
+```
+<xvc_vector_len> is the max width of the vector that can be shifted 
+                 into the server
+```
+
+### MESSAGE: "mrd:"
+
+The primary use of "mrd:" message is to read an address. 
+
+**Syntax**
+
+Client Sends:
+```
+"mrd:<flags><address><num bytes>"
+```
+
+Server Returns:
+```
+“<data><status>"
+```
+
+Where:
+```
+<flags> ULEB128 bit field for future flag use
+<address> ULEB128 starting address for memory read
+<num bytes> ULEB128 number of bytes to read
+<data> byte vector of data read
+```
+
+### MESSAGE: "mwr:"
+
+The primary use of "mwr:" message is to write at an address. 
+
+**Syntax**
+
+Client Sends:
+```
+"mwr:<flags><address><num bytes><data>"
+```
+
+Server Returns:
+```
+“<status>"
+```
+
+Where:
+```
+<flags> ULEB128 bit field for future flag use
+<address> ULEB128 starting address for memory write
+<num bytes> ULEB128 number of bytes to write
+<data> byte vector to write
+```
+
+### MESSAGE: "settck:"
+Similar to XVC 1.0
+
+### MESSAGE: "shift:"
+Similar to XVC 1.0
+
+## Note
+XVC server 1.1 for Versal performs reads and writes (*mrd* and *mwr*) as multi-word transactions. On some platforms performing accesses unaligned to 64-bits addresses may throw "Bus Error". In such cases, uncomment *ENABLE_SINGLE_WORD_RW* definition in *xvc_mem.c* to perform single word (32-bits) read/write transactions.
