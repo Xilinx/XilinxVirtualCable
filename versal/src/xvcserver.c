@@ -1,5 +1,5 @@
 /*********************************************************************
- * Copyright (c) 2017 Xilinx, Inc.
+ * Copyright (c) 2021 Xilinx, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,7 +183,6 @@ static size_t get_uleb128(unsigned char** buf, void *bufend) {
     do {
         n = p < (unsigned char *)bufend ? *p++ : (p++, 0);
         value |= (n & 0x7fL) << i;
-        //printf("\tvalue 0x%08lx i %lu n 0x%lX\n", value, i, n);
         i += 7;
     } while ((n & 0x80L) != 0);
     *buf = p;
@@ -279,7 +278,6 @@ read_more:
         unsigned len;
 
         while (p < e && *p != ':') {
-            // printf("cycle: %d at %x ", *p, p);
             p++;
         }
         if (p >= e) {
@@ -311,6 +309,7 @@ read_more:
                 strcat(capabilities, "state-aware,");
 #if XVC_MEM
             strcat(capabilities, "memory,");
+            // idcode to identify versal_debug_bridge
             strcat(capabilities, "idcode=2315268243,");
 #endif
             strcat(capabilities, "status");
@@ -445,19 +444,15 @@ read_more:
             p += 4;
 
             if (!c->pending_error[0]) {
-                // fprintf(stdout, "bits received %d %d %x %x\n", bits, bytes, p[0], p[bytes]);
-        
                 c->handlers->shift_tms_tdi(c->client_data, bits, p, p + bytes, reply_buf + reply_len);
             }
             if (c->pending_error[0]) {
-                printf("Problem\n");
                 memset(reply_buf + reply_len, 0, bytes);
             }
             reply_len += bytes;
             p += bytes * 2;
 
             gettimeofday(&stop, NULL);
-            //printf("Shift external %lu u-seconds\n", stop.tv_usec - start.tv_usec);
 
             goto reply_with_optional_status;
         }
@@ -562,7 +557,6 @@ read_more:
 #endif // XVC_MEM
 #endif
 
-        // fprintf(stderr, "protocol error: received len %d", (int)len);
         fprintf(stderr, "protocol error: received %.*s\n", (int)len, cbuf);
         goto error;
 
@@ -588,8 +582,6 @@ read_more:
         consume_packet(c, cbuf - c->buf);
         
         gettimeofday(&stop, NULL);
-        // if (start.tv_usec != 0)
-        //     printf("Shift send packet %lu u-seconds\n", stop.tv_usec - start.tv_usec);
         
         if (c->buf_len && !fill) goto read_more;
     }
@@ -675,7 +667,8 @@ int xvcserver_start(
             host = tmpname;
         }
         if (log_mode != LOG_MODE_QUIET)
-            fprintf(stdout, "INFO: To connect to this xvc_mem instance use url: %s:%s:%s\n\n", transport, host, port);
+            fprintf(stdout, "INFO: To connect to this xvc_mem instance use url: %s:%s:%s\n\n",
+                    transport, host, port);
     }
 
     while ((fd = accept(sock, NULL, NULL)) >= 0) {
@@ -696,7 +689,8 @@ int xvcserver_start(
         client_port = htons(client_addr.sin_port);
 
         if (log_mode != LOG_MODE_QUIET)
-            fprintf(stdout, "INFO: xvcserver accepted connection from client %s:%d \n", client_ip, client_port);
+            fprintf(stdout, "INFO: xvcserver accepted connection from client %s:%d \n",
+                    client_ip, client_port);
 
         memset(c, 0, sizeof *c);
         c->fd = fd;
@@ -723,5 +717,3 @@ cleanup:
     free(url_copy);
     return ret;
 }
-
-// 67d7842dbbe25473c3c32b93c0da8047785f30d78e8a024de1b57352245f9689

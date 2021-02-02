@@ -18,7 +18,7 @@ This capability helps facilitate hardware debug for designs that:
 # XVC 1.1 Protocol
 ```
 XVC 1.1 Protocol 
-Copyright 2015-2019 Xilinx, Inc.  All rights reserved.
+Copyright 2015-2021 Xilinx, Inc.  All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

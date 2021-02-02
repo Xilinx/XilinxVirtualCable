@@ -1,5 +1,5 @@
 ######################################################################
-# Copyright (c) 2020 Xilinx, Inc.
+# Copyright (c) 2021 Xilinx, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,6 @@
 CROSS_COMPILE := aarch64-linux-gnu-
 CC=aarch64-linux-gnu-gcc
 
-
-
-ifndef XVCMEM_VERSION
-  XVCMEM_VERSION:=2020.1
-endif
-
-#CC = gcc
-
 CFLAGS = -Wall
 
 BINDIR = bin
@@ -37,7 +29,7 @@ debug: DEBUG = -ggdb
 debug: all
 
 $(OBJDIR)/%.o : %.c
-	@$(CC) -DXVCMEM_VERSION=\"$(XVCMEM_VERSION)\" $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 all: $(OBJS)
 	$(CC) $(CFLAGS) -o $(BINDIR)/$(TARGET) $(OBJS)
