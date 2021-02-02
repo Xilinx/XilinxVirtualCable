@@ -182,3 +182,6 @@ Where:
                Byte 0 of this vector is shifted out first. The vector is 
                num_bits and rounds up to the nearest byte.
 ```
+
+# Note
+XVC server 1.1 for Versal performs reads and writes (*mrd* and *mwr*) as multi-word transactions. On some platforms performing accesses unaligned to 64-bits addresses may throw "Bus Error". In such cases, uncomment *ENABLE_SINGLE_WORD_RW* definition in *xvc_mem.c* to perform single word (32-bits) read/write transactions.

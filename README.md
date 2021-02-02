@@ -285,3 +285,6 @@ Similar to XVC 1.0
 
 ### MESSAGE: "shift:"
 Similar to XVC 1.0
+
+## Note
+XVC server 1.1 for Versal performs reads and writes (*mrd* and *mwr*) as multi-word transactions. On some platforms performing accesses unaligned to 64-bits addresses may throw "Bus Error". In such cases, uncomment *ENABLE_SINGLE_WORD_RW* definition in *xvc_mem.c* to perform single word (32-bits) read/write transactions.
