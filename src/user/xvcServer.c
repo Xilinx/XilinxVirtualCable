@@ -81,7 +81,7 @@ int handle_data(int fd, int fd_ioctl) {
                 return 1;
             }
             if (verbose) {
-                printf("%u : Received command: 'getinfo'\n", (int)time(NULL));
+                printf("%u : Received command: 'getinfo'", (int)time(NULL));
                 printf("\t Replied with %s\n", xvcInfo);
             }
             break;
@@ -94,7 +94,7 @@ int handle_data(int fd, int fd_ioctl) {
                 return 1;
             }
             if (verbose) {
-                printf("%u : Received command: 'settck'\n", (int)time(NULL));
+                printf("%u : Received command: 'settck'", (int)time(NULL));
                 printf("\t Replied with '%.*s'\n\n", 4, cmd + 5);
             }
             break;
@@ -102,7 +102,7 @@ int handle_data(int fd, int fd_ioctl) {
             if (sread(fd, cmd, 4) != 1)
                 return 1;
             if (verbose) {
-                printf("%u : Received command: 'shift'\n", (int)time(NULL));
+                printf("%u : Received command: 'shift'\t", (int)time(NULL));
             }
         } else {
             fprintf(stderr, "invalid cmd '%s'\n", cmd);
@@ -128,9 +128,8 @@ int handle_data(int fd, int fd_ioctl) {
         memset(result, 0, nr_bytes);
 
         if (verbose) {
-            printf("\tNumber of Bits  : %d\n", len);
+            printf("\tNumber of Bits  : %d\t", len);
             printf("\tNumber of Bytes : %d \n", nr_bytes);
-            printf("\n");
         }
 
 #ifndef USE_IOCTL
@@ -172,10 +171,11 @@ int handle_data(int fd, int fd_ioctl) {
             byteIndex += shift_num_bytes;
 
             if (verbose) {
-                printf("LEN : 0x%08x\n", shift_num_bits);
-                printf("TMS : 0x%08x\n", tms);
-                printf("TDI : 0x%08x\n", tdi);
-                printf("TDO : 0x%08x\n", tdo);
+		int mask = (1 << shift_num_bits) - 1;
+                printf("LEN : %8d\t", shift_num_bits);
+                printf("TMS : 0x%08x\t", tms);
+                printf("TDI : 0x%08x\t", tdi);
+                printf("TDO : 0x%08x\n", tdo & mask);
             }
         }
 #else /* USE_IOCTL */
@@ -196,6 +196,10 @@ int handle_data(int fd, int fd_ioctl) {
         if (write(fd, result, nr_bytes) != (int)nr_bytes) {
             perror("write");
             return 1;
+        }
+
+        if (verbose) {
+            printf("\n");
         }
     } while (1);
 
