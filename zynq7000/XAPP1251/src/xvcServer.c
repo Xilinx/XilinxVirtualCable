@@ -204,26 +204,35 @@ int handle_data(int fd, volatile jtag_t* ptr) {
 int main(int argc, char **argv) {
    int i;
    int s;
-   int c; 
+   int c;
+   char *d = "uio0";
    int fd_uio;
+   int port = 2542;
+   char dev_file[]="/dev/";
    
    struct sockaddr_in address;
    
 
-
    opterr = 0;
 
-   while ((c = getopt(argc, argv, "v")) != -1)
+   while ((c = getopt(argc, argv, "vd:p:")) != -1)
       switch (c) {
       case 'v':
          verbose = 1;
          break;
+	  case 'd':
+		 d = optarg;
+		 break;
+	  case 'p':
+		 port = atoi(optarg);
+		 break;
       case '?':
-         fprintf(stderr, "usage: %s [-v]\n", *argv);
+         fprintf(stderr, "usage: %s [-v] [-d <uio_to_be_used>] [-p <port>]\n example: %s -v -d uio0 -p 2542 \n", *argv ,*argv);
          return 1;
       }
-
-   fd_uio = open("/dev/uio0", O_RDWR );
+	  
+   strcat(dev_file,d);
+   fd_uio = open(dev_file, O_RDWR );
    if (fd_uio < 1) {
       fprintf(stderr,"Failed to Open UIO Device\n");
       return -1;
@@ -247,7 +256,7 @@ int main(int argc, char **argv) {
    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &i, sizeof i);
 
    address.sin_addr.s_addr = INADDR_ANY;
-   address.sin_port = htons(2542);
+   address.sin_port = htons(port);
    address.sin_family = AF_INET;
 
    if (bind(s, (struct sockaddr*) &address, sizeof(address)) < 0) {

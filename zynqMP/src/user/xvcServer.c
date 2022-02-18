@@ -20,10 +20,14 @@
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <getopt.h>
+#include <ctype.h>
+
+#define USE_IOCTL
 
 #ifndef USE_IOCTL
 #define MAP_SIZE    0x10000
-#define UIO_PATH    "/dev/uio0"
+static const char *UIO_PATH = "/dev/uio0";
 
 typedef struct {
     uint32_t length_offset;
@@ -35,12 +39,12 @@ typedef struct {
 #else /* USE_IOCTL */
 #include <sys/ioctl.h>
 #include "xvc_ioctl.h"
-#define CHAR_DEV_PATH   "/dev/xilinx_xvc_driver"
+static const char *CHAR_DEV_PATH = "/dev/xilinx_xvc_driver";
 #endif /* !USE_IOCTL */
 
 static int verbose = 0;
 
-#define XVC_PORT 2542
+static int XVC_PORT = 2542;
 
 static int sread(int fd, void *target, int len) {
     unsigned char *t = target;
@@ -53,6 +57,44 @@ static int sread(int fd, void *target, int len) {
     }
     return 1;
 }
+
+#ifdef USE_IOCTL
+static void hexdump(FILE *fp, const void *buff, unsigned int size)
+{
+        unsigned int i;
+        const uint8_t *b = (uint8_t *)buff;
+        char ascii[17];
+        char str[2] = { 0x0, };
+
+        if (size == 0)
+                return;
+
+        for (i = 0; i < size; i++) {
+                if ((i & 0x0f) == 0x00) {
+                        fprintf(fp, " %08x:", i);
+                        memset(ascii, 0, sizeof(ascii));
+                }
+                fprintf(fp, " %02x", b[i]);
+                str[0] = isprint(b[i]) ? b[i] : '.';
+                str[1] = '\0';
+                strncat(ascii, str, sizeof(ascii) - 1);
+
+                if ((i & 0x0f) == 0x0f)
+                        fprintf(fp, " | %s\n", ascii);
+        }
+        /* print trailing up to a 16 byte boundary. */
+        for (; i < ((size + 0xf) & ~0xf); i++) {
+                fprintf(fp, "   ");
+                str[0] = ' ';
+                str[1] = '\0';
+                strncat(ascii, str, sizeof(ascii) - 1);
+
+                if ((i & 0x0f) == 0x0f)
+                        fprintf(fp, " | %s\n", ascii);
+        }
+        fprintf(fp, "\n");
+}
+#endif
 
 #ifndef USE_IOCTL
 int handle_data(int fd, volatile jtag_t* ptr) {
@@ -192,6 +234,15 @@ int handle_data(int fd, int fd_ioctl) {
             fprintf(stderr, "xvc ioctl error: %s\n", strerror(errsv));
             return errsv;
         }
+
+        if (verbose > 1) {
+            fprintf(stderr, "TMS (%d bytes/%d bits):\n", nr_bytes, len);
+            hexdump(stderr, buffer, nr_bytes);
+            fprintf(stderr, "TDI (%d bytes/%d bits):\n", nr_bytes, len);
+            hexdump(stderr, buffer + nr_bytes, nr_bytes);
+            fprintf(stderr, "TDO (%d bytes/%d bits):\n", nr_bytes, len);
+            hexdump(stderr, result, nr_bytes);
+        }
 #endif /* !USE_IOCTL */
         if (write(fd, result, nr_bytes) != nr_bytes) {
             perror("write");
@@ -227,6 +278,38 @@ int main(int argc, char **argv) {
     int c;
     struct sockaddr_in address;
     char hostname[256];
+    /* options descriptor */
+    static struct option longopts[] = {
+        { "help",    no_argument,       NULL, '?' },
+        { "verbose", no_argument,       NULL, 'v' },
+        { "port",    required_argument, NULL, 'p' },
+        { "device",  required_argument, NULL, 'd' },
+        { NULL,      0,                 NULL, 0 }
+    };
+
+    opterr = 0;
+
+    while ((c = getopt_long(argc, argv, "vp:d:", longopts, NULL)) != -1) {
+        switch (c) {
+            case 'v':
+                verbose++;
+                break;
+            case 'p':
+                XVC_PORT = atoi(optarg);
+                break;
+            case 'd':
+#ifdef USE_IOCTL
+                CHAR_DEV_PATH = optarg;
+#else
+                UIO_PATH = optarg;
+#endif
+                break;
+            case '?':
+                fprintf(stderr, "usage: %s [-v,--verbose] [-p,--port <port>] "
+                    "[-d,--device <device>]\n", *argv);
+                return 1;
+        }
+    }
 
 #ifndef USE_IOCTL
     int fd_uio;
@@ -255,19 +338,6 @@ int main(int argc, char **argv) {
 
     display_driver_properties(fd_ioctl);
 #endif /* !USE_IOCTL */
-
-    opterr = 0;
-
-    while ((c = getopt(argc, argv, "v")) != -1) {
-        switch (c) {
-            case 'v':
-                verbose = 1;
-                break;
-            case '?':
-                fprintf(stderr, "usage: %s [-v]\n", *argv);
-                return 1;
-        }
-    }
 
     s = socket(AF_INET, SOCK_STREAM, 0);
 
