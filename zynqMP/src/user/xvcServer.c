@@ -358,7 +358,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (listen(s, 0) < 0) {
+    if (listen(s, 1) < 0) {
         perror("listen");
         return 1;
     }
