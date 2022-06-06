@@ -32,10 +32,11 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
+#include <getopt.h>
 
 #include "xvc_ioctl.h"
 
-static const char char_path[] = "/dev/xilinx_xvc_driver";
+static const char *char_path = "/dev/xilinx_xvc_driver";
 
 #define BYTE_ALIGN(a) ((a + 7) / 8)
 #define MIN(a, b) (a < b ? a : b)
@@ -148,6 +149,7 @@ static int testXVC(int fd, struct xil_xvc_ioc *xvc_ioc, unsigned cmd_nbits, unsi
 int main(int argc, char **argv)
 {
     int fd;
+    int c;
     struct xil_xvc_ioc xvc_ioc;
     unsigned max_nbytes;
     unsigned char pattern[] = "abcdefgHIJKLMOP";
@@ -156,6 +158,23 @@ int main(int argc, char **argv)
     //  377, 610, 987, 1597, 2584, 4096, 0x2000, 0x800000, 0};
     unsigned test_lens[] = {32, 0};
     unsigned test_index = 0;
+
+    static struct option longopts[] = {
+        { "device",  required_argument, NULL, 'd' },
+        { NULL,      0,                 NULL, 0 }
+    };
+
+
+    while ((c = getopt_long(argc, argv, "d:", longopts, NULL)) != -1) {
+        switch (c) {
+            case 'd':
+                char_path = optarg;
+                break;
+            case '?':
+                fprintf(stderr, "usage: %s [-d,--device <device>]\n", *argv);
+                return 1;
+        }
+    }
 
     // try opening the driver
     fd = open(char_path, O_RDWR | O_SYNC);
