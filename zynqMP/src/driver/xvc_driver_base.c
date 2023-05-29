@@ -27,7 +27,7 @@
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
 #include <linux/version.h>
-#include <asm/io.h>
+#include <linux/io.h>
 #include <linux/mod_devicetable.h>
 
 #include "xvc_driver.h"
@@ -165,7 +165,7 @@ int probe(struct platform_device* pdev) {
 			}
 
 #ifndef GET_DB_BY_RES
-			db_ptrs[i] = ioremap_nocache(db_addr, db_size);
+			db_ptrs[i] = ioremap(db_addr, db_size);
 #else
 			db_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 			if (db_res) {
