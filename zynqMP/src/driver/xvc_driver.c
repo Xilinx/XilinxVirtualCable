@@ -21,12 +21,11 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/slab.h>
-#include <asm/uaccess.h>
 #include <linux/spinlock.h>
 #include <linux/platform_device.h>
 #include <linux/list.h>
 #include <linux/uaccess.h>
-#include <asm-generic/io.h>
+#include <linux/io.h>
 
 #include "xvc_driver.h"
 
