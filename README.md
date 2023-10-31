@@ -15,9 +15,10 @@ This capability helps facilitate hardware debug for designs that:
 * Extensible to allow for safe, secure connections
 
 # Directory layout
-    ├── versal                   # XVC 1.1 source code for Versal SoC devices
-    ├── zynq7000                 # XVC 1.0 source code for Zynq-7000 SoC devices
-    ├── zynqMP                   # XVC 1.0 source code for Zynq-Ultrascale+ SoC devices
+    ├── dpc                          # XVC 1.1 source code for debug through Debug Packet Controller
+    ├── jtag/zynq7000                # XVC 1.0 source code for Zynq-7000 SoC devices
+    ├── jtag/zynqMP                  # XVC 1.0 source code for Zynq-Ultrascale+ SoC devices
+    ├── mem/versal                   # XVC 1.1 source code for Versal SoC devices
     └── README.md
 
 # XVC 1.0 Protocol
