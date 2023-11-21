@@ -11,11 +11,11 @@ endif
 
 ARCH := arm64
 CROSS_COMPILE := aarch64-linux-gnu-
-CFLAGS=-Wall
+CFLAGS=-Wall \
+ -DENABLE_DMA_64BIT_ADDR=$(ENABLE_DMA_64BIT_ADDR)
 CDEBUG=-g
 CC=aarch64-linux-gnu-gcc
 CFLAGS_HSDP= -Wall -I./src/ -lm \
- -DENABLE_DMA_64BIT_ADDR=$(ENABLE_DMA_64BIT_ADDR) \
  -DDMA_PHYS_ADDR=$(DMA_PHYS_ADDR)
 
 XVC_CFILE := \
