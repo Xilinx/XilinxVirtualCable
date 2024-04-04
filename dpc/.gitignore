@@ -1,0 +1,5 @@
+# Object files
+*.o
+
+# Executable
+xvc_dpc
