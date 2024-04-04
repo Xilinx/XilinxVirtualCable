@@ -47,8 +47,10 @@ static const char * usage_text[] = {
   "-------------------------------",
   "[--help]      Show help information",
   "[-s]          Socket listening port and protocol.  Default: TCP::10200",
-  "[--dma_addr]  DMA physical address.",
+  "[--dma_addr]  AXI DMA IP physical address.",
+  "[--dma_size]  AXI DMA IP size in bytes.",
   "[--buf_addr]  Buffer physical address.",
+  "[--buf_size]  Buffer size in bytes.",
   "[--verbose]   Show additional messages during execution",
   "[--quiet]     Disable logging all non-error messages during execution",
   "\n",
@@ -63,6 +65,9 @@ static int open_port(void *client_data, XvcClient * c) {
     xvc_dpc_t* xvc_dpc = (xvc_dpc_t*)client_data;
 
     xvc_dpc->c = c;
+
+    setup_dma_region(xvc_dpc->dma.addr, xvc_dpc->dma.size);
+    setup_buffer_region(xvc_dpc->buf.addr, xvc_dpc->buf.size);
 
     xvc_dpc->hsdp = (hsdp_dma *) hsdp_open();
 
@@ -173,6 +178,9 @@ int main(int argc, char **argv)
     int quiet = 0;
     int verbose = 0;
 
+    xvc_dpc.dma.size = 0;
+    xvc_dpc.buf.size = 0;
+
     while (i < argc && argv[i][0] == '-') {
         if (strcmp(argv[i], "-s") == 0) {
             if (i + 1 >= argc) {
@@ -186,12 +194,24 @@ int main(int argc, char **argv)
                 return ERROR_INVALID_ARGUMENT;
             }
             xvc_dpc.dma.addr = strtoul(argv[++i], NULL, 0);
+        } else if (strcmp(argv[i], "--dma_size") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "option --dma_size requires an argument\n");
+                return ERROR_INVALID_ARGUMENT;
+            }
+            xvc_dpc.dma.size = strtoul(argv[++i], NULL, 0);
         } else if (strcmp(argv[i], "--buf_addr") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "option --buf_addr requires an argument\n");
                 return ERROR_INVALID_ARGUMENT;
             }
             xvc_dpc.buf.addr = strtoul(argv[++i], NULL, 0);
+        } else if (strcmp(argv[i], "--buf_size") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "option --buf_size requires an argument\n");
+                return ERROR_INVALID_ARGUMENT;
+            }
+            xvc_dpc.buf.size = strtoul(argv[++i], NULL, 0);
         } else if (strcmp(argv[i], "--verbose") == 0) {
             verbose = 1;
             if (quiet) {

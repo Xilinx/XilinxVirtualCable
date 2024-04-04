@@ -94,10 +94,12 @@ static void alloc_buffers() {
 
     addr = dma_phys_addr;
     size = dma_size;
+    printf("INFO: AXI DMA addr = 0x%lX, size = 0x%lX\n", (uint64_t) addr, (uint64_t) size);
     dma = mmap_buffer(mem_fd, addr, size);
 
     addr = buffer_phys_addr;
     size = buffer_size;
+    printf("INFO: Buffer addr = 0x%lX, size = 0x%lX\n", (uint64_t) addr, (uint64_t) size);
     data_buffer = mmap_buffer(mem_fd, addr, size);
 
     close(mem_fd);
