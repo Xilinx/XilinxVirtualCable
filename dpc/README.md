@@ -190,10 +190,9 @@ Optional arguments to `make xvc_dpc` command:
 ```
 ENABLE_DMA_64BIT_ADDR: <1 or 0> If AXI DMA IP's address width is greater than 32-bits this
                        should be 1 else zero.
-DMA_PHYS_ADDR:         <64-bit address> of AXI DMA IP in Vivado design.
 ```
 
 Example with optional arguments:
 ```bash
-$ make xvc_dpc ENABLE_DMA_64BIT_ADDR=0 DMA_PHYS_ADDR=0xA4000000
+$ make xvc_dpc ENABLE_DMA_64BIT_ADDR=0
 ```
