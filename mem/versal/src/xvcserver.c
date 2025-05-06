@@ -175,9 +175,9 @@ static void set_uint_le(void * buf, int len, unsigned value) {
 }
 
 #if XVC_VERSION >= 11
-static size_t get_uleb128(unsigned char** buf, void *bufend) {
+static uint64_t get_uleb128(unsigned char** buf, void *bufend) {
     unsigned char * p = (unsigned char *)*buf;
-    size_t value = 0;
+    uint64_t value = 0;
     size_t i = 0;
     size_t n;
     do {
@@ -195,7 +195,7 @@ static void reply_status(XvcClient * c) {
     reply_len++;
 }
 
-static void reply_uleb128(unsigned value) {
+static void reply_uleb128(uint64_t value) {
     unsigned pos = 0;
     do {
         if (reply_len + pos < max_packet_len) {

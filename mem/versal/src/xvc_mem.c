@@ -34,11 +34,11 @@
 #include <errno.h>
 #include <pthread.h>
 
-/* Default - Multi-word transactions. Use single word (32-bits) reads if getting a "bus error"
+/* Default - Enable single word transactions. Use single word (32-bits) reads if getting a "bus error"
  * when using accesses unaligned to 64bits.
- * Uncomment ENABLE_SINGLE_WORD_RW definition to enable single word transactions.
+ * Comment ENABLE_SINGLE_WORD_RW definition to enable multi-word transactions.
  */
-//#define ENABLE_SINGLE_WORD_RW
+#define ENABLE_SINGLE_WORD_RW
 #define DEFAULT_HUB_ADDR 0xA4000000
 #define DEFAULT_HUB_SIZE 0x200000
 #define BYTE_ALIGN(a) ((a + 7) / 8)
@@ -148,6 +148,11 @@ static void mrd(
     struct timeval stop, start;
     int ret = 0;
 
+    if (log_mode == LOG_MODE_VERBOSE) {
+        fprintf(stdout, "INFO: Memory read addr 0x%08lX num_bytes %lu\n", 
+                (unsigned long) addr, (unsigned long) num_bytes);
+    }
+
     if (addr < xvc_mem->hub.addr || addr + num_bytes > xvc_mem->hub.addr + xvc_mem->hub.size) {
         xvcserver_set_error(xvc_mem->c, "Invalid arguments addr 0x%08llX num_bytes %lu\n", 
                             (unsigned long long) addr, (unsigned long) num_bytes);
@@ -185,6 +190,11 @@ static void mwr(
     xvc_mem_t* xvc_mem = (xvc_mem_t*)client_data;
     struct timeval stop, start;
     int ret = 0;
+
+    if (log_mode == LOG_MODE_VERBOSE) {
+        fprintf(stdout, "INFO: Memory write addr 0x%08lX num_bytes %lu\n", 
+                (unsigned long) addr, (unsigned long) num_bytes);
+    }
 
     if (addr < xvc_mem->hub.addr || addr + num_bytes > xvc_mem->hub.addr + xvc_mem->hub.size) {
         xvcserver_set_error(xvc_mem->c, "Invalid arguments addr 0x%08lX num_bytes %lu\n", 
