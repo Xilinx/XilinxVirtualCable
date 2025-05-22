@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
    char *d = "uio0";
    int fd_uio;
    int port = 2542;
-   char dev_file[]="/dev/";
+   char dev_file[20]="/dev/";
    
    struct sockaddr_in address;
    
