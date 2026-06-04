@@ -34,6 +34,10 @@ struct db_config {
 };
 #endif
 
+#ifndef LOG_PREFIX
+#define LOG_PREFIX XVC_DRIVER_NAME ": "
+#endif
+
 long xil_xvc_ioctl(unsigned char* db_ptr, const char __user* arg);
 long xil_xvc_readprops(const struct db_config* db_config, const char __user* arg);
 
