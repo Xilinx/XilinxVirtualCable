@@ -45,7 +45,7 @@ static struct cdev xvc_char_ioc_dev;
 #ifndef _XVC_USER_CONFIG_H
 #define CONFIG_COUNT 1
 #define GET_DB_BY_RES 1
-static struct resource *db_res = NULL;
+static struct resource *db_res[CONFIG_COUNT] = {NULL};
 #endif /* _XVC_USER_CONFIG_H */
 
 static void __iomem * db_ptrs[CONFIG_COUNT];
@@ -79,10 +79,11 @@ long char_ctrl_ioctl(struct file *file_p, unsigned int cmd, unsigned long arg) {
 #ifndef GET_DB_BY_RES
 				struct db_config config_info = db_configs[char_index];
 #else
+				struct resource *i_db_res = (struct resource*) db_res[char_index];
 				struct db_config config_info = {
 					.name = NULL,
-					.base_addr = db_res ? db_res->start : 0,
-					.size = db_res ? resource_size(db_res) : 0,
+					.base_addr = i_db_res ? i_db_res->start : 0,
+					.size = i_db_res ? resource_size(i_db_res) : 0,
 				};
 #endif
 				status = xil_xvc_readprops(&config_info, (void __user*)arg);
@@ -171,12 +172,12 @@ int probe(struct platform_device* pdev) {
 #ifndef GET_DB_BY_RES
 			db_ptrs[i] = ioremap(db_addr, db_size);
 #else
-			db_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-			if (db_res) {
-				db_addr = db_res->start;
-				db_size = resource_size(db_res);
+			db_res[i] = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+			if (db_res[i]) {
+				db_addr = db_res[i]->start;
+				db_size = resource_size(db_res[i]);
 			}
-			db_ptrs[i] = devm_ioremap_resource(&pdev->dev, db_res);
+			db_ptrs[i] = devm_ioremap_resource(&pdev->dev, db_res[i]);
 #endif
 			if (!db_ptrs[i] || IS_ERR(db_ptrs[i])) {
 				printk(KERN_ERR LOG_PREFIX "Failed to remap debug bridge memory at offset 0x%lX, size %lu", db_addr, db_size);
@@ -184,6 +185,8 @@ int probe(struct platform_device* pdev) {
 			} else {
 				printk(KERN_INFO LOG_PREFIX "Mapped debug bridge at offset 0x%lX, size 0x%lX", db_addr, db_size);
 			}
+
+			break;
 		}
 	}
 
@@ -207,9 +210,9 @@ static void remove(struct platform_device* pdev)
 #else
 				unsigned long db_addr = 0;
 				unsigned long db_size = 0;
-				if (db_res) {
-					db_addr = db_res->start;
-					db_size = resource_size(db_res);
+				if (db_res[i]) {
+					db_addr = db_res[i]->start;
+					db_size = resource_size(db_res[i]);
 				}
 #endif
 
